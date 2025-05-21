@@ -1,0 +1,6 @@
+streamlit
+sentence-transformers
+pdfplumber
+python-dotenv
+rapidfuzz
+requests
