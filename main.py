@@ -107,11 +107,9 @@ if st.button("Perguntar") and query:
         for doc in documents:
             score = util.cos_sim(query_embedding, doc_embeddings[doc["id"]]).item()
             scores.append((score, doc))
-        top_docs = sorted(scores, key=lambda x: x[0], reverse=True)[:15]  # Reduzido para 6 docs
-
-        # Envie só um trecho do texto de cada página para o contexto (ex: 500 caracteres)
+        top_docs = sorted(scores, key=lambda x: x[0], reverse=True)[:15]  
         context = "\n".join([
-            f"Documento {doc['pdf']}, página {doc['page_number']}: {doc['text'][:500]}"
+            f"Documento {doc['pdf']}, página {doc['page_number']}: {doc['text']}"
             for _, doc in top_docs
         ])
 
@@ -122,7 +120,7 @@ if st.button("Perguntar") and query:
             for doc in documents:
                 if doc['pdf'].lower() == "falhas.pdf" and doc['page_number'] in paginas:
                     trechos.append(
-                        f"Documento {doc['pdf']}, página {doc['page_number']}: {doc['text'][:500]}"
+                        f"Documento {doc['pdf']}, página {doc['page_number']}: {doc['text']}"
                     )
             if trechos:
                 contexto_falha = (
@@ -150,7 +148,6 @@ if st.button("Perguntar") and query:
             }
             data = {
                 "model": "gpt-4o-mini",
-                "max_tokens": 300,  # Limite para evitar respostas longas
                 "messages": [
                     {"role": "system", "content": prompt_system},
                     {"role": "user", "content": prompt_user}
