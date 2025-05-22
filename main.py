@@ -12,12 +12,13 @@ import pickle
 # Carregar chave da OpenAI dos secrets do Streamlit Cloud
 api_key = st.secrets["OPENAI_API_KEY"]
 
-# Carregar modelo com cache para evitar recarregamento
+# Carregar modelo para gerar embedding da query
 @st.cache_resource
 def load_model():
     return SentenceTransformer("paraphrase-MiniLM-L3-v2")
 model = load_model()
 
+# Carregar documentos e embeddings já salvos (pré-processados offline)
 @st.cache_resource
 def load_data():
     with open('documents.pkl', 'rb') as f:
@@ -28,7 +29,8 @@ def load_data():
 
 documents, doc_embeddings = load_data()
 
-# Funções utilitárias
+# Função para extrair imagem da página do PDF (pode ser cacheada)
+@st.cache_data
 def get_page_image_base64(pdf_path, page_number):
     try:
         with pdfplumber.open(pdf_path) as pdf:
@@ -41,26 +43,6 @@ def get_page_image_base64(pdf_path, page_number):
     except Exception as e:
         print(f"Erro ao extrair imagem: {e}")
         return None
-
-def extract_documents(pdf_paths):
-    documents = []
-    current_id = 1
-    for path in pdf_paths:
-        try:
-            with pdfplumber.open(path) as pdf:
-                for page_number, page in enumerate(pdf.pages, start=1):
-                    text = page.extract_text()
-                    if text:
-                        documents.append({
-                            'pdf': path,
-                            'id': current_id,
-                            'page_number': page_number,
-                            'text': text
-                        })
-                        current_id += 1
-        except Exception as e:
-            print(f"Não encontrou o documento {path}: {e}")
-    return documents
 
 def carregar_falhas_txt(caminho="falhas.txt"):
     erros_paginas = {}
@@ -100,9 +82,7 @@ def extract_pdf_and_page(text):
         return pdf, page
     return None, None
 
-# Carregar documentos e embeddings
-pdf_paths = ['mecanica.pdf', 'Falhas.pdf', 'eletrica.pdf']
-documents = extract_documents(pdf_paths)
+# Carregar falhas e códigos
 erros_paginas = carregar_falhas_txt()
 lista_codigos = list(erros_paginas.keys())
 
@@ -127,10 +107,11 @@ if st.button("Perguntar") and query:
         for doc in documents:
             score = util.cos_sim(query_embedding, doc_embeddings[doc["id"]]).item()
             scores.append((score, doc))
-        top_docs = sorted(scores, key=lambda x: x[0], reverse=True)[:6]
+        top_docs = sorted(scores, key=lambda x: x[0], reverse=True)[:6]  # Reduzido para 6 docs
 
+        # Envie só um trecho do texto de cada página para o contexto (ex: 500 caracteres)
         context = "\n".join([
-            f"Documento {doc['pdf']}, página {doc['page_number']}: {doc['text']}"
+            f"Documento {doc['pdf']}, página {doc['page_number']}: {doc['text'][:500]}"
             for _, doc in top_docs
         ])
 
@@ -141,7 +122,7 @@ if st.button("Perguntar") and query:
             for doc in documents:
                 if doc['pdf'].lower() == "falhas.pdf" and doc['page_number'] in paginas:
                     trechos.append(
-                        f"Documento {doc['pdf']}, página {doc['page_number']}: {doc['text']}"
+                        f"Documento {doc['pdf']}, página {doc['page_number']}: {doc['text'][:500]}"
                     )
             if trechos:
                 contexto_falha = (
@@ -169,6 +150,7 @@ if st.button("Perguntar") and query:
             }
             data = {
                 "model": "gpt-4o-mini",
+                "max_tokens": 300,  # Limite para evitar respostas longas
                 "messages": [
                     {"role": "system", "content": prompt_system},
                     {"role": "user", "content": prompt_user}
