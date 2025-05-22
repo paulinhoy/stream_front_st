@@ -7,6 +7,7 @@ import re
 from sentence_transformers import SentenceTransformer, util
 from rapidfuzz import process, fuzz
 import requests
+import pickle
 
 # Carregar chave da OpenAI dos secrets do Streamlit Cloud
 api_key = st.secrets["OPENAI_API_KEY"]
@@ -14,15 +15,25 @@ api_key = st.secrets["OPENAI_API_KEY"]
 # Carregar modelo com cache para evitar recarregamento
 @st.cache_resource
 def load_model():
-    return SentenceTransformer("all-MiniLM-L6-v2")
+    return SentenceTransformer("paraphrase-MiniLM-L3-v2")
 model = load_model()
+
+@st.cache_resource
+def load_data():
+    with open('documents.pkl', 'rb') as f:
+        documents = pickle.load(f)
+    with open('embeddings.pkl', 'rb') as f:
+        doc_embeddings = pickle.load(f)
+    return documents, doc_embeddings
+
+documents, doc_embeddings = load_data()
 
 # Funções utilitárias
 def get_page_image_base64(pdf_path, page_number):
     try:
         with pdfplumber.open(pdf_path) as pdf:
             page = pdf.pages[page_number - 1]
-            pil_image = page.to_image(resolution=150).original
+            pil_image = page.to_image(resolution=100).original
             buffered = BytesIO()
             pil_image.save(buffered, format="PNG")
             img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
@@ -94,7 +105,6 @@ pdf_paths = ['mecanica.pdf', 'Falhas.pdf', 'eletrica.pdf']
 documents = extract_documents(pdf_paths)
 erros_paginas = carregar_falhas_txt()
 lista_codigos = list(erros_paginas.keys())
-doc_embeddings = {doc["id"]: model.encode(doc['text'], convert_to_tensor=True) for doc in documents}
 
 # Interface Streamlit
 st.markdown("""
@@ -117,7 +127,7 @@ if st.button("Perguntar") and query:
         for doc in documents:
             score = util.cos_sim(query_embedding, doc_embeddings[doc["id"]]).item()
             scores.append((score, doc))
-        top_docs = sorted(scores, key=lambda x: x[0], reverse=True)[:15]
+        top_docs = sorted(scores, key=lambda x: x[0], reverse=True)[:6]
 
         context = "\n".join([
             f"Documento {doc['pdf']}, página {doc['page_number']}: {doc['text']}"
