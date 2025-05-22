@@ -23,7 +23,7 @@ def extract_documents(pdf_paths):
 # Caminhos dos PDFs
 pdf_paths = ['mecanica.pdf', 'Falhas.pdf', 'eletrica.pdf']
 
-model = SentenceTransformer("paraphrase-MiniLM-L3-v2")
+model = SentenceTransformer("all-MiniLM-L6-v2")
 
 # Extrair documentos
 documents = extract_documents(pdf_paths)

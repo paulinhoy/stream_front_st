@@ -15,7 +15,7 @@ api_key = st.secrets["OPENAI_API_KEY"]
 # Carregar modelo para gerar embedding da query
 @st.cache_resource
 def load_model():
-    return SentenceTransformer("paraphrase-MiniLM-L3-v2")
+    return SentenceTransformer("all-MiniLM-L6-v2")
 model = load_model()
 
 # Carregar documentos e embeddings já salvos (pré-processados offline)
