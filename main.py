@@ -107,7 +107,7 @@ if st.button("Perguntar") and query:
         for doc in documents:
             score = util.cos_sim(query_embedding, doc_embeddings[doc["id"]]).item()
             scores.append((score, doc))
-        top_docs = sorted(scores, key=lambda x: x[0], reverse=True)[:6]  # Reduzido para 6 docs
+        top_docs = sorted(scores, key=lambda x: x[0], reverse=True)[:15]  # Reduzido para 6 docs
 
         # Envie só um trecho do texto de cada página para o contexto (ex: 500 caracteres)
         context = "\n".join([
