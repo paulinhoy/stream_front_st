@@ -9,16 +9,14 @@ from rapidfuzz import process, fuzz
 import requests
 import pickle
 
-# Carregar chave da OpenAI dos secrets do Streamlit Cloud
 api_key = st.secrets["OPENAI_API_KEY"]
 
-# Carregar modelo para gerar embedding da query
 @st.cache_resource
 def load_model():
     return SentenceTransformer("all-MiniLM-L6-v2")
 model = load_model()
 
-# Carregar documentos e embeddings já salvos (pré-processados offline)
+# Textos e embeddings já processados
 @st.cache_resource
 def load_data():
     with open('documents.pkl', 'rb') as f:
@@ -29,7 +27,6 @@ def load_data():
 
 documents, doc_embeddings = load_data()
 
-# Função para extrair imagem da página do PDF (pode ser cacheada)
 @st.cache_data
 def get_page_image_base64(pdf_path, page_number):
     try:
@@ -73,6 +70,8 @@ def extrair_codigo_erro(texto, lista_codigos):
         if resultado and resultado[1] > melhor_score and resultado[1] > 80:
             melhor_codigo, melhor_score = resultado[0], resultado[1]
     return melhor_codigo
+erros_paginas = carregar_falhas_txt()
+lista_codigos = list(erros_paginas.keys())
 
 def extract_pdf_and_page(text):
     match = re.search(r'Fonte:\s*([^\s,]+),\s*p[áa]gina\s*(\d+)', text, re.IGNORECASE)
@@ -81,10 +80,6 @@ def extract_pdf_and_page(text):
         page = int(match.group(2))
         return pdf, page
     return None, None
-
-# Carregar falhas e códigos
-erros_paginas = carregar_falhas_txt()
-lista_codigos = list(erros_paginas.keys())
 
 # Interface Streamlit
 st.markdown("""

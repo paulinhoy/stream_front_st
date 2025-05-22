@@ -2,7 +2,6 @@ import pickle
 from sentence_transformers import SentenceTransformer
 import pdfplumber
 
-# Função para extrair texto dos PDFs
 def extract_documents(pdf_paths):
     documents = []
     current_id = 1
@@ -19,13 +18,8 @@ def extract_documents(pdf_paths):
                     })
                     current_id += 1
     return documents
-
-# Caminhos dos PDFs
 pdf_paths = ['mecanica.pdf', 'Falhas.pdf', 'eletrica.pdf']
-
 model = SentenceTransformer("all-MiniLM-L6-v2")
-
-# Extrair documentos
 documents = extract_documents(pdf_paths)
 
 # Calcular embeddings
@@ -39,5 +33,3 @@ with open('embeddings.pkl', 'wb') as f:
 
 with open('documents.pkl', 'wb') as f:
     pickle.dump(documents, f)
-
-print("Embeddings e documentos salvos!")
